@@ -1,5 +1,6 @@
 package com.kernel360.kernelsquare.domain.reservation_article.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -112,15 +113,31 @@ public class ReservationArticleService {
 		List<FindAllReservationArticleResponse> responsePages = pages.getContent().stream()
 			.map(article -> {
 				Long fullCheck = reservationRepository.countByReservationArticleIdAndMemberIdIsNull(article.getId());
+				Boolean articleStatus = canIReservation(article.getId());
 				return FindAllReservationArticleResponse.of(
 					article.getMember(),
 					article,
+					articleStatus,
 					fullCheck
 				);
 			})
 			.toList();
 
 		return PageResponse.of(pagination, responsePages);
+	}
+
+	private Boolean canIReservation(Long id) {
+		boolean check = false;
+		LocalDateTime minStartTime = reservationRepository.findStartTimeByReservationArticleId(id);
+		LocalDateTime currentTime = LocalDateTime.now();
+
+		LocalDate minStartDate = minStartTime.toLocalDate();
+		LocalDate currentDate = currentTime.toLocalDate();
+
+		if (currentDate.isAfter(minStartDate.minusDays(7)) && currentDate.isBefore(minStartDate.minusDays(1))) {
+			check = true;
+		}
+		return check;
 	}
 
 	@Transactional(readOnly = true)
